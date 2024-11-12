@@ -1,27 +1,44 @@
-use std::{env, fs, io::Read, process::exit};
-
+use std::fs;
+use std::path::PathBuf;
+use clap::{Parser, ArgGroup};
 use huffman_tree::{decode, encode};
 
 mod huffman_tree;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let filename = &args[1];
-    let mut file = match fs::File::open(filename) {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("Failed to open file: {e}");
-            exit(-1);
-        }
-    };
-    let mut contents = String::new();
-    let _ = file.read_to_string(&mut contents);
-    let mut output_file = fs::File::create("./encoded").unwrap();
-    encode(&mut output_file, contents);
-    drop(output_file);
-
-    let mut encoded = fs::File::open("./encoded").unwrap();
-    let mut decoded = fs::File::create("./decoded").unwrap();
-    decode(&mut encoded, &mut decoded);
+    let args = Args::parse();
+    if args.encode {
+        let mut input_file = fs::File::open(args.input)
+            .expect("Failed to open input file");
+        let mut output_file = fs::File::create(&args.output)
+            .expect("Failed to open output file");
+        encode(&mut input_file, &mut output_file);
+    } else if args.decode {
+        let mut input_file = fs::File::open(args.input)
+            .expect("Failed to open input file");
+        let mut output_file = fs::File::create(&args.output)
+            .expect("Failed to open output file");
+        decode(&mut input_file, &mut output_file);
+    }
 }
 
+// Huffman encoder/decoder
+#[derive(Parser)]
+#[clap(about)]
+#[clap(group(
+    ArgGroup::new("coding")
+    .required(true)
+    .args(&["encode", "decode"]),
+))]
+struct Args {
+    // The input file
+    input: PathBuf,
+    // The destination file
+    output: PathBuf,
+    // Encode file
+    #[clap(short, conflicts_with = "decode")]
+    encode: bool,
+    // Decode file
+    #[clap(short, conflicts_with = "encode")]
+    decode: bool,
+}

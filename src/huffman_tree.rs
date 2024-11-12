@@ -62,10 +62,9 @@ fn count_chars(contents: &str) -> HashMap<char, u32> {
     map
 }
 
-pub fn encode(
-    output_file: &mut File,
-    contents: String
-) {
+pub fn encode(input_file: &mut File, output_file: &mut File) {
+    let mut contents = String::new();
+    let _ = input_file.read_to_string(&mut contents).expect("Couldn't read input file");
     let charmap = count_chars(&contents);
     let tree = create_huffman_tree(charmap);
     let table = create_huffman_table(tree.clone());
